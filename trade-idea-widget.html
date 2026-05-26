@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trade Idea Plotline Widget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0f1117;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      padding: 32px 16px;
+    }
+
+    .demo-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-label {
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: -8px;
+    }
+
+    /* ── Widget card ── */
+    .ti-card {
+      width: 100%;
+      max-width: 360px;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .ti-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+    }
+
+    .ti-header-left {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      min-width: 0;
+    }
+
+    .ti-logo-wrap {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .ti-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      background: #f0f0f0;
+    }
+
+    .ti-logo-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .ti-pair-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ti-pair-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111111;
+      letter-spacing: -0.01em;
+    }
+
+    .ti-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    .ti-badge--long {
+      background: #e6f4ea;
+      color: #1a7f37;
+    }
+
+    .ti-badge--short {
+      background: #fdecea;
+      color: #c0392b;
+    }
+
+    .ti-validity {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #888888;
+    }
+
+    .ti-status {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    .ti-status--awaiting {
+      background: #f0f0f0;
+      color: #666666;
+    }
+
+    .ti-status--active {
+      background: #e8eaf6;
+      color: #3f51b5;
+    }
+
+    .ti-status--tp1-hit,
+    .ti-status--tp2-hit {
+      background: #e6f4ea;
+      color: #1a7f37;
+    }
+
+    .ti-status--sl-hit {
+      background: #fdecea;
+      color: #c0392b;
+    }
+
+    .ti-header-right {
+      text-align: right;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .ti-risk-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+      border: 1px solid;
+    }
+
+    .ti-risk-pill--low {
+      color: #2d8a49;
+      background: #eef7f0;
+      border-color: #b8ddc4;
+    }
+
+    .ti-risk-pill--medium {
+      color: #b8741a;
+      background: #fdf6ea;
+      border-color: #e8c992;
+    }
+
+    .ti-risk-pill--high {
+      color: #c0392b;
+      background: #fdf0ee;
+      border-color: #e8b4ae;
+    }
+
+    /* ── Plotline ── */
+    .ti-plotline {
+      margin-bottom: 24px;
+    }
+
+    .ti-plotline-points {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(var(--point-count, 4), 1fr);
+      gap: 4px;
+    }
+
+    .ti-plotline-points::before {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: calc(50% / var(--point-count, 4));
+      right: calc(50% / var(--point-count, 4));
+      height: 3px;
+      border-radius: 999px;
+      background: var(--line-gradient, #e8e8e8);
+      z-index: 0;
+    }
+
+    .ti-point {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .ti-marker {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 2;
+      background: #ffffff;
+      isolation: isolate;
+    }
+
+    /* Milestone states */
+    .ti-marker--awaiting {
+      border: 2.5px solid #c4c4c4;
+      background: #ffffff;
+    }
+
+    .ti-marker--active {
+      border: none;
+      background: #3f51b5;
+    }
+
+    .ti-marker--hit {
+      border: none;
+      background: #28a745;
+    }
+
+    .ti-marker--sl-hit {
+      border: none;
+      background: #ffffff;
+    }
+
+    .ti-marker--sl-hit::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: #ffffff;
+      z-index: 0;
+    }
+
+    .ti-marker--sl-hit::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background-color: #dc3545;
+      z-index: 1;
+    }
+
+    .ti-marker svg {
+      width: 11px;
+      height: 11px;
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+
+    .ti-marker--active:not(.ti-marker--pulse),
+    .ti-marker--hit:not(.ti-marker--pulse),
+    .ti-marker--sl-hit:not(.ti-marker--pulse) {
+      animation: none;
+      box-shadow: none;
+    }
+
+    @keyframes ti-check-blink-active {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    @keyframes ti-check-blink-hit {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes ti-marker-pulse-sl {
+      0%, 100% { background-color: #dc3545; }
+      50% { background-color: #f06b6b; }
+    }
+
+    .ti-marker--pulse.ti-marker--active svg {
+      animation: ti-check-blink-active 1.6s ease-in-out infinite;
+    }
+
+    .ti-marker--pulse.ti-marker--hit svg {
+      animation: ti-check-blink-hit 1.6s ease-in-out infinite;
+    }
+
+    .ti-marker--pulse.ti-marker--sl-hit::after {
+      animation: ti-marker-pulse-sl 1.6s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ti-marker--pulse.ti-marker--active svg,
+      .ti-marker--pulse.ti-marker--hit svg,
+      .ti-marker--pulse.ti-marker--sl-hit::after {
+        animation: none;
+      }
+    }
+
+    .ti-point-label {
+      font-size: 11px;
+      color: #888888;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .ti-point-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: #111111;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    /* ── Footer ── */
+    .ti-footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ti-footer-left {
+      justify-self: start;
+    }
+
+    .ti-footer-center {
+      justify-self: center;
+      text-align: center;
+    }
+
+    .ti-footer-right {
+      justify-self: end;
+    }
+
+    .ti-footer-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .ti-stat-label {
+      font-size: 12px;
+      color: #888888;
+      line-height: 1.2;
+    }
+
+    .ti-profit-value {
+      font-size: 17px;
+      font-weight: 600;
+      color: #28a745;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+    }
+
+    .ti-rr-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: #5c5c5c;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+    }
+
+    .ti-footer-center .ti-stat-label {
+      font-size: 11px;
+      color: #999999;
+    }
+
+    .ti-cta {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 10px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+      transition: opacity 0.15s ease;
+    }
+
+    .ti-cta--long {
+      background: #28a745;
+      color: #ffffff;
+    }
+
+    .ti-cta--long:hover {
+      opacity: 0.9;
+    }
+
+    .ti-cta--short {
+      background: #dc3545;
+      color: #ffffff;
+    }
+
+    .ti-cta--short:hover {
+      opacity: 0.9;
+    }
+
+    .ti-cta--disabled {
+      background: #e8e8e8;
+      color: #888888;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-grid" id="demo-root"></div>
+
+  <script>
+    /**
+     * Trade Idea Plotline Widget
+     *
+     * INTEGRATION (Plotline / Mudrex)
+     * ─────────────────────────────────
+     * Render:  TradeIdeaWidget.render(containerElement, tradeIdeaObject)
+     * Update:  call render() again whenever TIA sends new data (poll / webhook)
+     * Remove:  clear container when idea leaves GET /v1/trade-ideas/active
+     *
+     * Input:   TIA trade_idea JSON — https://project-tia-production.up.railway.app/docs/api
+     * Output:  card with data-trade-status + data-idea-id on .ti-card root
+     *
+     * STATUS MAPPING (from hit timestamps, not status alone)
+     *   awaiting   → entry_hit_at is null
+     *   active     → entry_hit_at set (label: "Entry hit")
+     *   tp1_hit    → tp1_hit_at set (wins over later SL)
+     *   tp2_hit    → tp2_hit_at or status TP2_HIT
+     *   sl_hit     → sl_hit_at or status SL_HIT (only if TP1 not hit)
+     *
+     * FIELD MAPPING
+     *   symbol, direction, leverage, entry_price, tp1_price, tp2_price, stop_loss
+     *   est_potential_pct, risk_reward_ratio, expiry_at, confidence, logo_url
+     *   mudrex_deeplink, entry_hit_at, tp1_hit_at, tp2_hit_at, sl_hit_at
+     *
+     * CUSTOMISATION
+     *   Colours / typography → edit CSS classes in <style>
+     *   Labels / formatting  → edit TRADE_STATUS, RISK_LEVELS, format* helpers
+     *   Placeholder logo     → PLACEHOLDER_LOGO_SRC or assets/placeholder-logo.png
+     */
+    const TradeIdeaWidget = (() => {
+      const CHECK_SVG =
+        '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      const PLACEHOLDER_LOGO_SRC = "assets/placeholder-logo.png";
+
+      const MILESTONE_LABELS = {
+        sl: "Stop Loss",
+        entry: "Entry Price",
+        tp1: "Take Profit 1",
+        tp2: "Take Profit 2",
+      };
+
+      function formatSymbol(symbol) {
+        if (!symbol) return "—";
+        const quoteAssets = ["USDT", "USDC", "USD", "BTC", "ETH", "BNB"];
+        for (const quote of quoteAssets) {
+          if (symbol.endsWith(quote) && symbol.length > quote.length) {
+            const base = symbol.slice(0, -quote.length);
+            return `${base} • ${quote}`;
+          }
+        }
+        return symbol;
+      }
+
+      function formatPrice(value) {
+        if (value == null || value === "") return "—";
+        const num = Number(value);
+        if (Number.isNaN(num)) return String(value);
+        const formatted = num.toLocaleString("en-US", {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 7,
+        });
+        return "$" + formatted;
+      }
+
+      function formatProfitPct(value) {
+        if (value == null || value === "") return "—";
+        const num = Number(value);
+        if (Number.isNaN(num)) return String(value);
+        const sign = num >= 0 ? "+" : "";
+        return sign + num.toFixed(2) + "%";
+      }
+
+      function formatRiskRewardRatio(value) {
+        if (value == null || value === "") return "—";
+        return String(value);
+      }
+
+      function formatValidity(iso) {
+        if (!iso) return "—";
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return "—";
+        const time = date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        const day = date.toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+        return `Valid till ${time} • ${day}`;
+      }
+
+      function badgeLabel(direction, leverage) {
+        const side = direction === "SHORT" ? "Short" : "Long";
+        return `${side} ${leverage}X`;
+      }
+
+      const TRADE_STATUS = {
+        awaiting: { label: "Awaiting", css: "ti-status--awaiting" },
+        active: { label: "Entry hit", css: "ti-status--active" },
+        tp1_hit: { label: "TP1 Hit", css: "ti-status--tp1-hit" },
+        tp2_hit: { label: "TP2 Hit", css: "ti-status--tp2-hit" },
+        sl_hit: { label: "SL Hit", css: "ti-status--sl-hit" },
+      };
+
+      const RISK_LEVELS = {
+        low: { label: "Low risk", css: "ti-risk-pill--low" },
+        medium: { label: "Medium risk", css: "ti-risk-pill--medium" },
+        high: { label: "High risk", css: "ti-risk-pill--high" },
+      };
+
+      /**
+       * Map TIA confidence tier to display risk level.
+       * HIGH confidence → Low Risk, MEDIUM → Medium Risk, LOW → High Risk.
+       */
+      function deriveRiskLevel(idea) {
+        switch (idea.confidence) {
+          case "HIGH":
+            return "low";
+          case "MEDIUM":
+            return "medium";
+          case "LOW":
+            return "high";
+          default:
+            return "medium";
+        }
+      }
+
+      function ctaLabel(direction) {
+        return direction === "SHORT" ? "Sell/ Short" : "Buy/ Long";
+      }
+
+      function ctaClass(direction, disabled) {
+        if (disabled) return "ti-cta ti-cta--disabled";
+        return direction === "SHORT" ? "ti-cta ti-cta--short" : "ti-cta ti-cta--long";
+      }
+
+      /**
+       * Derive overall trade status from TIA hit timestamps + status.
+       * TP1 hit takes priority over a later SL — widget shows TP1 Hit only.
+       */
+      function deriveTradeStatus(idea) {
+        const tp2Hit = Boolean(idea.tp2_hit_at) || idea.status === "TP2_HIT";
+        const tp1Hit = Boolean(idea.tp1_hit_at);
+
+        if (tp2Hit) return "tp2_hit";
+        if (tp1Hit) return "tp1_hit";
+        if (idea.sl_hit_at || idea.status === "SL_HIT") return "sl_hit";
+        if (idea.entry_hit_at) return "active";
+        return "awaiting";
+      }
+
+      /**
+       * Which plotline node is the latest hit — only this one blinks.
+       */
+      function deriveLatestMilestoneKey(idea) {
+        const tp2Hit = Boolean(idea.tp2_hit_at) || idea.status === "TP2_HIT";
+        const tp1Hit = Boolean(idea.tp1_hit_at);
+
+        if (tp2Hit) return "tp2";
+        if (tp1Hit) return "tp1";
+        if (idea.sl_hit_at || idea.status === "SL_HIT") return "sl";
+        if (idea.entry_hit_at) return "entry";
+        return null;
+      }
+
+      /**
+       * Derive plotline milestone states from TIA hit timestamps + status.
+       * Once TP1 is hit, SL is not shown as hit on the plotline.
+       */
+      function deriveMilestoneStates(idea) {
+        const tp2Hit = Boolean(idea.tp2_hit_at) || idea.status === "TP2_HIT";
+        const tp1Hit = Boolean(idea.tp1_hit_at) || tp2Hit;
+        const entryHit = Boolean(idea.entry_hit_at) || tp1Hit || tp2Hit;
+        const slHit =
+          (Boolean(idea.sl_hit_at) || idea.status === "SL_HIT") && !tp1Hit;
+
+        return {
+          sl: slHit ? "sl-hit" : "awaiting",
+          entry: entryHit ? "active" : "awaiting",
+          tp1: tp1Hit ? "hit" : "awaiting",
+          tp2: tp2Hit ? "hit" : "awaiting",
+        };
+      }
+
+      function buildPlotlinePoints(idea) {
+        const points = [
+          { key: "sl", price: idea.stop_loss },
+          { key: "entry", price: idea.entry_price },
+          { key: "tp1", price: idea.tp1_price },
+        ];
+        if (idea.tp2_price != null && idea.tp2_price !== "") {
+          points.push({ key: "tp2", price: idea.tp2_price });
+        }
+        return points;
+      }
+
+      function buildLineGradient(points, states) {
+        if (points.length < 2) return "#e8e8e8";
+
+        const span = points.length - 1;
+        const pct = (index) => (index / span) * 100;
+        const slHit = states.sl === "sl-hit";
+        const entryIndex = points.findIndex((p) => p.key === "entry");
+
+        if (slHit && entryIndex >= 0) {
+          const entryPct = pct(entryIndex);
+          return `linear-gradient(to right, #dc3545 0%, #dc3545 ${entryPct}%, #e8e8e8 ${entryPct}%, #e8e8e8 100%)`;
+        }
+
+        if (slHit) {
+          return "linear-gradient(to right, #dc3545 0%, #dc3545 100%)";
+        }
+
+        const lastHitIndex = points.reduce((max, p, i) => {
+          const s = states[p.key];
+          if (s === "hit") return Math.max(max, i);
+          return max;
+        }, -1);
+
+        // Entry active alone keeps the line grey; green spans entry → last TP hit.
+        if (lastHitIndex <= entryIndex) return "#e8e8e8";
+
+        const startPct = pct(entryIndex);
+        const endPct = pct(lastHitIndex);
+        return `linear-gradient(to right, #e8e8e8 0%, #e8e8e8 ${startPct}%, #28a745 ${startPct}%, #28a745 ${endPct}%, #e8e8e8 ${endPct}%, #e8e8e8 100%)`;
+      }
+
+      function markerClass(state, isLatest) {
+        const pulse = isLatest && state !== "awaiting" ? " ti-marker--pulse" : "";
+        switch (state) {
+          case "active":
+            return "ti-marker ti-marker--active" + pulse;
+          case "hit":
+            return "ti-marker ti-marker--hit" + pulse;
+          case "sl-hit":
+            return "ti-marker ti-marker--sl-hit" + pulse;
+          default:
+            return "ti-marker ti-marker--awaiting";
+        }
+      }
+
+      function markerHtml(state) {
+        if (state === "active" || state === "hit") return CHECK_SVG;
+        return "";
+      }
+
+      function placeholderLogoHtml(hidden) {
+        const style = hidden ? ' style="display:none"' : "";
+        return `<img class="ti-logo ti-logo--placeholder"${style} src="${PLACEHOLDER_LOGO_SRC}" alt="" />`;
+      }
+
+      function logoHtml(idea) {
+        const placeholder = placeholderLogoHtml(false);
+
+        if (idea.logo_url) {
+          const hiddenPlaceholder = placeholderLogoHtml(true);
+          return `<div class="ti-logo-wrap">
+            <img class="ti-logo" src="${escapeAttr(idea.logo_url)}" alt=""
+              onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+            ${hiddenPlaceholder}
+          </div>`;
+        }
+
+        return `<div class="ti-logo-wrap">${placeholder}</div>`;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function escapeAttr(str) {
+        return escapeHtml(str).replace(/'/g, "&#39;");
+      }
+
+      function render(container, idea) {
+        const tradeStatus = deriveTradeStatus(idea);
+        const statusMeta = TRADE_STATUS[tradeStatus];
+        const riskKey = deriveRiskLevel(idea);
+        const riskMeta = RISK_LEVELS[riskKey];
+        const states = deriveMilestoneStates(idea);
+        const latestKey = deriveLatestMilestoneKey(idea);
+        const points = buildPlotlinePoints(idea);
+        const lineGradient = buildLineGradient(points, states);
+        const badgeClass =
+          idea.direction === "SHORT" ? "ti-badge ti-badge--short" : "ti-badge ti-badge--long";
+        const ctaDisabled = !idea.mudrex_deeplink;
+        const ctaClasses = ctaClass(idea.direction, ctaDisabled);
+        const ctaText = ctaLabel(idea.direction);
+        const ctaTag = ctaDisabled
+          ? `<span class="${ctaClasses}">${escapeHtml(ctaText)}</span>`
+          : `<a class="${ctaClasses}" href="${escapeAttr(idea.mudrex_deeplink)}">${escapeHtml(ctaText)}</a>`;
+
+        const plotlineHtml = points
+          .map(({ key, price }) => {
+            const state = states[key];
+            return `
+              <div class="ti-point">
+                <div class="${markerClass(state, key === latestKey)}" aria-hidden="true">${markerHtml(state)}</div>
+                <span class="ti-point-label">${MILESTONE_LABELS[key]}</span>
+                <span class="ti-point-value">${formatPrice(price)}</span>
+              </div>`;
+          })
+          .join("");
+
+        container.innerHTML = `
+          <article class="ti-card" data-idea-id="${escapeAttr(idea.id || "")}" data-trade-status="${escapeAttr(tradeStatus)}">
+            <header class="ti-header">
+              <div class="ti-header-left">
+                ${logoHtml(idea)}
+                <div>
+                  <div class="ti-pair-row">
+                    <h1 class="ti-pair-name">${escapeHtml(formatSymbol(idea.symbol))}</h1>
+                    <span class="${badgeClass}">${escapeHtml(badgeLabel(idea.direction, idea.leverage))}</span>
+                  </div>
+                  <p class="ti-validity">${escapeHtml(formatValidity(idea.expiry_at))}</p>
+                  <span class="ti-status ${statusMeta.css}">${escapeHtml(statusMeta.label)}</span>
+                </div>
+              </div>
+              <div class="ti-header-right">
+                <span class="ti-risk-pill ${riskMeta.css}">${escapeHtml(riskMeta.label)}</span>
+              </div>
+            </header>
+
+            <section class="ti-plotline" aria-label="Trade progress">
+              <div class="ti-plotline-points" style="--point-count:${points.length};--line-gradient:${lineGradient}">
+                ${plotlineHtml}
+              </div>
+            </section>
+
+            <footer class="ti-footer">
+              <div class="ti-footer-left ti-footer-stat">
+                <div class="ti-profit-value">${escapeHtml(formatProfitPct(idea.est_potential_pct))}</div>
+                <div class="ti-stat-label">Estd Profit</div>
+              </div>
+              <div class="ti-footer-center ti-footer-stat">
+                <div class="ti-rr-value">${escapeHtml(formatRiskRewardRatio(idea.risk_reward_ratio))}</div>
+                <div class="ti-stat-label">Risk/Reward</div>
+              </div>
+              <div class="ti-footer-right">${ctaTag}</div>
+            </footer>
+          </article>`;
+      }
+
+      return {
+        render,
+        deriveTradeStatus,
+        deriveMilestoneStates,
+        deriveRiskLevel,
+        TRADE_STATUS,
+        RISK_LEVELS,
+        formatSymbol,
+        formatPrice,
+        formatProfitPct,
+        formatRiskRewardRatio,
+        formatValidity,
+      };
+    })();
+
+    /* ── Demo: sample TIA objects in each plotline state ── */
+    const BASE_IDEA = {
+      id: "demo-btc-long",
+      symbol: "BTCUSDT",
+      direction: "LONG",
+      margin_type: "ISOLATED",
+      leverage: 10,
+      entry_price: "40000.00000000",
+      tp1_price: "41000.00000000",
+      tp2_price: "42000.00000000",
+      stop_loss: "39900.00000000",
+      est_potential_pct: "9.96",
+      risk_reward_ratio: "1:2",
+      confidence: "HIGH",
+      expiry_at: "2025-06-24T06:32:00.000Z",
+      logo_url: null,
+      mudrex_deeplink: "mudrex://futures-buy-sell/demo/long/BTCUSDT/10/40000/39900/41000",
+      status: "LIVE",
+      entry_hit_at: null,
+      tp1_hit_at: null,
+      tp2_hit_at: null,
+      sl_hit_at: null,
+    };
+
+    const DEMO_STATES = [
+      {
+        label: "Awaiting",
+        idea: { ...BASE_IDEA, id: "demo-awaiting" },
+      },
+      {
+        label: "Entry hit",
+        idea: {
+          ...BASE_IDEA,
+          id: "demo-entry",
+          entry_hit_at: "2025-06-23T06:32:00.000Z",
+        },
+      },
+      {
+        label: "TP1 hit",
+        idea: {
+          ...BASE_IDEA,
+          id: "demo-tp1",
+          entry_hit_at: "2025-06-23T06:32:00.000Z",
+          tp1_hit_at: "2025-06-23T07:15:00.000Z",
+        },
+      },
+      {
+        label: "TP2 hit",
+        idea: {
+          ...BASE_IDEA,
+          id: "demo-tp2",
+          status: "TP2_HIT",
+          entry_hit_at: "2025-06-23T06:32:00.000Z",
+          tp1_hit_at: "2025-06-23T07:15:00.000Z",
+          tp2_hit_at: "2025-06-23T08:00:00.000Z",
+        },
+      },
+      {
+        label: "SL hit",
+        idea: {
+          ...BASE_IDEA,
+          id: "demo-sl",
+          status: "SL_HIT",
+          confidence: "LOW",
+          entry_hit_at: "2025-06-23T06:32:00.000Z",
+          sl_hit_at: "2025-06-23T07:00:00.000Z",
+        },
+      },
+      {
+        label: "Short · Medium risk",
+        idea: {
+          ...BASE_IDEA,
+          id: "demo-short",
+          symbol: "ETHUSDT",
+          direction: "SHORT",
+          leverage: 5,
+          confidence: "MEDIUM",
+          entry_price: "3000.00000000",
+          tp1_price: "2900.00000000",
+          tp2_price: "2850.00000000",
+          stop_loss: "3050.00000000",
+          mudrex_deeplink: "mudrex://futures-buy-sell/demo/short/ETHUSDT/5/3000/3050/2900",
+        },
+      },
+    ];
+
+    const demoRoot = document.getElementById("demo-root");
+    DEMO_STATES.forEach(({ label, idea }) => {
+      const labelEl = document.createElement("p");
+      labelEl.className = "demo-label";
+      labelEl.textContent = label;
+      demoRoot.appendChild(labelEl);
+
+      const slot = document.createElement("div");
+      demoRoot.appendChild(slot);
+      TradeIdeaWidget.render(slot, idea);
+    });
+
+    /* Expose for host integrations */
+    window.TradeIdeaWidget = TradeIdeaWidget;
+  </script>
+</body>
+</html>

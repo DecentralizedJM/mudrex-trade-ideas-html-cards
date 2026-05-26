@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trade Idea Plotline Widget</title>
+  <title>Trade Idea Plotline Widget (Light)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -453,13 +453,15 @@
 
   <script>
     /**
-     * Trade Idea Plotline Widget
+     * Trade Idea Plotline Widget — Light Mode
      *
      * INTEGRATION (Plotline / Mudrex)
      * ─────────────────────────────────
      * Render:  TradeIdeaWidget.render(containerElement, tradeIdeaObject)
      * Update:  call render() again whenever TIA sends new data (poll / webhook)
      * Remove:  clear container when idea leaves GET /v1/trade-ideas/active
+     *
+     * Use trade-idea-widget-dark.html for dark mode (TradeIdeaWidgetDark).
      *
      * Input:   TIA trade_idea JSON — https://project-tia-production.up.railway.app/docs/api
      * Output:  card with data-trade-status + data-idea-id on .ti-card root

@@ -209,8 +209,9 @@
 
     .ti-plotline-points {
       position: relative;
-      display: grid;
-      grid-template-columns: repeat(var(--point-count, 4), 1fr);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       gap: 4px;
     }
 
@@ -218,8 +219,8 @@
       content: "";
       position: absolute;
       top: 9px;
-      left: calc(50% / var(--point-count, 4));
-      right: calc(50% / var(--point-count, 4));
+      left: var(--bar-left, 0);
+      right: var(--bar-right, 0);
       height: 3px;
       border-radius: 999px;
       background: var(--line-gradient, #e8e8e8);
@@ -231,6 +232,24 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
+    }
+
+    .ti-point:first-child {
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .ti-point:first-child .ti-marker {
+      margin-left: 0;
+    }
+
+    .ti-point:last-child {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .ti-point:last-child .ti-marker {
+      margin-right: 0;
     }
 
     .ti-marker {
@@ -260,7 +279,7 @@
 
     .ti-marker--hit {
       border: none;
-      background: #28a745;
+      background: #219653;
     }
 
     .ti-marker--sl-hit {
@@ -387,15 +406,15 @@
     .ti-profit-value {
       font-size: 17px;
       font-weight: 600;
-      color: #28a745;
+      color: #219653;
       letter-spacing: -0.01em;
       line-height: 1.1;
     }
 
     .ti-rr-value {
-      font-size: 14px;
-      font-weight: 500;
-      color: #5c5c5c;
+      font-size: 17px;
+      font-weight: 600;
+      color: #219653;
       letter-spacing: -0.01em;
       line-height: 1.1;
     }
@@ -423,7 +442,7 @@
     }
 
     .ti-cta--long {
-      background: #28a745;
+      background: #219653;
       color: #ffffff;
     }
 
@@ -555,7 +574,7 @@
       }
 
       const TRADE_STATUS = {
-        awaiting: { label: "Awaiting", css: "ti-status--awaiting" },
+        awaiting: { label: "Awaiting entry", css: "ti-status--awaiting" },
         active: { label: "Entry hit", css: "ti-status--active" },
         tp1_hit: { label: "TP1 Hit", css: "ti-status--tp1-hit" },
         tp2_hit: { label: "TP2 Hit", css: "ti-status--tp2-hit" },
@@ -654,11 +673,14 @@
         return points;
       }
 
-      function buildLineGradient(points, states) {
+      function buildLineGradient(points, states, markerPcts) {
         if (points.length < 2) return "#e8e8e8";
 
         const span = points.length - 1;
-        const pct = (index) => (index / span) * 100;
+        const pct = (index) =>
+          markerPcts && markerPcts[index] != null
+            ? markerPcts[index]
+            : (index / span) * 100;
         const slHit = states.sl === "sl-hit";
         const entryIndex = points.findIndex((p) => p.key === "entry");
 
@@ -682,7 +704,60 @@
 
         const startPct = pct(entryIndex);
         const endPct = pct(lastHitIndex);
-        return `linear-gradient(to right, #e8e8e8 0%, #e8e8e8 ${startPct}%, #28a745 ${startPct}%, #28a745 ${endPct}%, #e8e8e8 ${endPct}%, #e8e8e8 100%)`;
+        return `linear-gradient(to right, #e8e8e8 0%, #e8e8e8 ${startPct}%, #219653 ${startPct}%, #219653 ${endPct}%, #e8e8e8 ${endPct}%, #e8e8e8 100%)`;
+      }
+
+      function alignPlotlineBar(track, points, states) {
+        if (!track) return;
+
+        const pointEls = track.querySelectorAll(".ti-point");
+        if (pointEls.length < 2) return;
+
+        const firstLabel = pointEls[0].querySelector(".ti-point-label");
+        const lastLabel = pointEls[pointEls.length - 1].querySelector(".ti-point-label");
+        const firstMarker = pointEls[0].querySelector(".ti-marker");
+        const lastMarker = pointEls[pointEls.length - 1].querySelector(".ti-marker");
+
+        if (!firstLabel || !lastLabel || !firstMarker || !lastMarker) return;
+
+        firstMarker.style.marginLeft = "0px";
+        lastMarker.style.marginLeft = "0px";
+
+        const firstLabelRect = firstLabel.getBoundingClientRect();
+        const firstMarkerRect = firstMarker.getBoundingClientRect();
+        firstMarker.style.marginLeft = `${firstLabelRect.left - firstMarkerRect.left}px`;
+
+        const lastLabelRect = lastLabel.getBoundingClientRect();
+        const lastMarkerRect = lastMarker.getBoundingClientRect();
+        lastMarker.style.marginLeft = `${lastLabelRect.right - lastMarkerRect.right}px`;
+
+        const trackRect = track.getBoundingClientRect();
+        const alignedFirstMarker = firstMarker.getBoundingClientRect();
+        const alignedLastMarker = lastMarker.getBoundingClientRect();
+
+        const barLeft = alignedFirstMarker.left - trackRect.left;
+        const barRight = trackRect.right - alignedLastMarker.right;
+
+        track.style.setProperty("--bar-left", `${Math.max(0, barLeft)}px`);
+        track.style.setProperty("--bar-right", `${Math.max(0, barRight)}px`);
+
+        const barWidth = trackRect.width - Math.max(0, barLeft) - Math.max(0, barRight);
+        const markerPcts = Array.from(pointEls).map((el) => {
+          const markerRect = el.querySelector(".ti-marker").getBoundingClientRect();
+          const center = markerRect.left + markerRect.width / 2 - trackRect.left - Math.max(0, barLeft);
+          return barWidth > 0 ? (center / barWidth) * 100 : 0;
+        });
+
+        track.style.setProperty("--line-gradient", buildLineGradient(points, states, markerPcts));
+      }
+
+      function queuePlotlineAlignment(track, points, states) {
+        const run = () => alignPlotlineBar(track, points, states);
+        requestAnimationFrame(run);
+        setTimeout(run, 120);
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(() => requestAnimationFrame(run));
+        }
       }
 
       function markerClass(state, isLatest) {
@@ -803,6 +878,9 @@
               <div class="ti-footer-right">${ctaTag}</div>
             </footer>
           </article>`;
+
+        const plotlineEl = container.querySelector(".ti-plotline-points");
+        queuePlotlineAlignment(plotlineEl, points, states);
       }
 
       return {
@@ -846,7 +924,7 @@
 
     const DEMO_STATES = [
       {
-        label: "Awaiting",
+        label: "Awaiting entry",
         idea: { ...BASE_IDEA, id: "demo-awaiting" },
       },
       {

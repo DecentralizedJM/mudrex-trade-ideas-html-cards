@@ -145,8 +145,13 @@
     }
 
     .ti-status--awaiting {
+      background: #fdf6ea;
+      color: #b8741a;
+    }
+
+    .ti-status--expired {
       background: #f0f0f0;
-      color: #666666;
+      color: #888888;
     }
 
     .ti-status--active {
@@ -268,8 +273,13 @@
 
     /* Milestone states */
     .ti-marker--awaiting {
+      border: 2.5px solid #e8c992;
+      background: #fffef8;
+    }
+
+    .ti-marker--expired {
       border: 2.5px solid #c4c4c4;
-      background: #ffffff;
+      background: #f5f5f5;
     }
 
     .ti-marker--active {
@@ -486,7 +496,8 @@
      * Output:  card with data-trade-status + data-idea-id on .ti-card root
      *
      * STATUS MAPPING (from hit timestamps, not status alone)
-     *   awaiting   → entry_hit_at is null
+     *   awaiting   → entry_hit_at is null (yellow)
+     *   expired    → status EXPIRED or expired_at set (gray)
      *   active     → entry_hit_at set (label: "Entry hit")
      *   tp1_hit    → tp1_hit_at set (wins over later SL)
      *   tp2_hit    → tp2_hit_at or status TP2_HIT
@@ -574,12 +585,17 @@
       }
 
       const TRADE_STATUS = {
-        awaiting: { label: "Awaiting entry", css: "ti-status--awaiting" },
+        awaiting: { label: "Awaiting", css: "ti-status--awaiting" },
+        expired: { label: "Expired", css: "ti-status--expired" },
         active: { label: "Entry hit", css: "ti-status--active" },
         tp1_hit: { label: "TP1 Hit", css: "ti-status--tp1-hit" },
         tp2_hit: { label: "TP2 Hit", css: "ti-status--tp2-hit" },
         sl_hit: { label: "SL Hit", css: "ti-status--sl-hit" },
       };
+
+      function isTradeExpired(idea) {
+        return idea.status === "EXPIRED" || Boolean(idea.expired_at);
+      }
 
       const RISK_LEVELS = {
         low: { label: "Low risk", css: "ti-risk-pill--low" },
@@ -618,6 +634,8 @@
        * TP1 hit takes priority over a later SL — widget shows TP1 Hit only.
        */
       function deriveTradeStatus(idea) {
+        if (isTradeExpired(idea)) return "expired";
+
         const tp2Hit = Boolean(idea.tp2_hit_at) || idea.status === "TP2_HIT";
         const tp1Hit = Boolean(idea.tp1_hit_at);
 
@@ -647,17 +665,19 @@
        * Once TP1 is hit, SL is not shown as hit on the plotline.
        */
       function deriveMilestoneStates(idea) {
+        const expired = isTradeExpired(idea);
         const tp2Hit = Boolean(idea.tp2_hit_at) || idea.status === "TP2_HIT";
         const tp1Hit = Boolean(idea.tp1_hit_at) || tp2Hit;
         const entryHit = Boolean(idea.entry_hit_at) || tp1Hit || tp2Hit;
         const slHit =
           (Boolean(idea.sl_hit_at) || idea.status === "SL_HIT") && !tp1Hit;
+        const pending = expired ? "expired" : "awaiting";
 
         return {
-          sl: slHit ? "sl-hit" : "awaiting",
-          entry: entryHit ? "active" : "awaiting",
-          tp1: tp1Hit ? "hit" : "awaiting",
-          tp2: tp2Hit ? "hit" : "awaiting",
+          sl: slHit ? "sl-hit" : pending,
+          entry: entryHit ? "active" : pending,
+          tp1: tp1Hit ? "hit" : pending,
+          tp2: tp2Hit ? "hit" : pending,
         };
       }
 
@@ -761,7 +781,8 @@
       }
 
       function markerClass(state, isLatest) {
-        const pulse = isLatest && state !== "awaiting" ? " ti-marker--pulse" : "";
+        const pulse =
+          isLatest && state !== "awaiting" && state !== "expired" ? " ti-marker--pulse" : "";
         switch (state) {
           case "active":
             return "ti-marker ti-marker--active" + pulse;
@@ -769,6 +790,8 @@
             return "ti-marker ti-marker--hit" + pulse;
           case "sl-hit":
             return "ti-marker ti-marker--sl-hit" + pulse;
+          case "expired":
+            return "ti-marker ti-marker--expired";
           default:
             return "ti-marker ti-marker--awaiting";
         }
@@ -822,7 +845,7 @@
         const lineGradient = buildLineGradient(points, states);
         const badgeClass =
           idea.direction === "SHORT" ? "ti-badge ti-badge--short" : "ti-badge ti-badge--long";
-        const ctaDisabled = !idea.mudrex_deeplink;
+        const ctaDisabled = !idea.mudrex_deeplink || tradeStatus === "expired";
         const ctaClasses = ctaClass(idea.direction, ctaDisabled);
         const ctaText = ctaLabel(idea.direction);
         const ctaTag = ctaDisabled
@@ -924,7 +947,7 @@
 
     const DEMO_STATES = [
       {
-        label: "Awaiting entry",
+        label: "Awaiting",
         idea: { ...BASE_IDEA, id: "demo-awaiting" },
       },
       {
@@ -964,6 +987,17 @@
           confidence: "LOW",
           entry_hit_at: "2025-06-23T06:32:00.000Z",
           sl_hit_at: "2025-06-23T07:00:00.000Z",
+        },
+      },
+      {
+        label: "Expired",
+        idea: {
+          ...BASE_IDEA,
+          id: "demo-expired",
+          status: "EXPIRED",
+          expiry_at: "2025-06-20T06:32:00.000Z",
+          expired_at: "2025-06-20T06:32:00.000Z",
+          mudrex_deeplink: null,
         },
       },
       {

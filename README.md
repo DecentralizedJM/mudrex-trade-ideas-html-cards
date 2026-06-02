@@ -15,7 +15,7 @@ Standalone HTML/CSS/JS cards for displaying Mudrex trade ideas inside Plotline (
 
 ## Preview locally
 
-Open either HTML file in a browser. Each file includes a built-in demo grid showing all plotline states (Awaiting, Entry hit, TP1 hit, TP2 hit, SL hit, plus a Short example).
+Open either HTML file in a browser. Each file includes a built-in demo grid showing all plotline states (Awaiting, Entry hit, TP1 hit, TP2 hit, SL hit, Expired, plus a Short example).
 
 ```bash
 # optional: serve from repo root if you prefer http:// URLs
@@ -50,7 +50,7 @@ TradeIdeaWidgetDark.render(containerElement, tradeIdeaObject);
 Each render replaces the container contents. The root card exposes:
 
 - `data-idea-id` — trade idea id
-- `data-trade-status` — derived widget status (`awaiting`, `active`, `tp1_hit`, `tp2_hit`, `sl_hit`)
+- `data-trade-status` — derived widget status (`awaiting`, `expired`, `active`, `tp1_hit`, `tp2_hit`, `sl_hit`)
 
 ### Exposed helpers
 
@@ -81,7 +81,8 @@ Status is derived from hit timestamps, not from `status` alone:
 
 | Widget status | Condition |
 | --- | --- |
-| Awaiting | `entry_hit_at` is null |
+| Awaiting | `entry_hit_at` is null (yellow) |
+| Expired | `status === EXPIRED` or `expired_at` set (gray) |
 | Entry hit | `entry_hit_at` set, TP1 not hit |
 | TP1 Hit | `tp1_hit_at` set (wins over a later SL) |
 | TP2 Hit | `tp2_hit_at` set or `status === TP2_HIT` |
@@ -89,7 +90,7 @@ Status is derived from hit timestamps, not from `status` alone:
 
 If TP1 was hit and SL hits later, the card stays on **TP1 Hit** — there is no separate “SL after TP1” state.
 
-Expired and withdrawn ideas are not rendered; remove them from the feed when they leave the active list.
+Render `EXPIRED` ideas from the closed/history feed with the gray **Expired** state. Withdrawn ideas are not rendered; remove them when they leave the active list.
 
 ## Customisation
 
